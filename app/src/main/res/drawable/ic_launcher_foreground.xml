@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple graduation-cap style glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,34L26,46l28,12l28,-12zM38,54v10c0,4 7,8 16,8s16,-4 16,-8v-10l-16,7z" />
+</vector>
