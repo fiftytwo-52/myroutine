@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_classes_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:padding="8dp"
+    android:background="@drawable/widget_pill_bg">
+
+    <TextView
+        android:id="@+id/widget_classes_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="No classes today"
+        android:textColor="#41454C"
+        android:textSize="12sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/widget_circles_row"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:id="@+id/left_circle"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginEnd="12dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="3dp"
+            android:background="@drawable/widget_circle_red">
+
+            <TextView
+                android:id="@+id/left_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NOW"
+                android:textColor="#D93025"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/left_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10A"
+                android:textColor="#1B1C1F"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/left_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="9:30 AM"
+                android:textColor="#41454C"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/right_circle"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="3dp"
+            android:background="@drawable/widget_circle_green">
+
+            <TextView
+                android:id="@+id/right_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NEXT"
+                android:textColor="#1E8E3E"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/right_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10B"
+                android:textColor="#1B1C1F"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/right_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10:00 AM"
+                android:textColor="#41454C"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

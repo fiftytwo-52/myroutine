@@ -1,0 +1,8 @@
+{
+  "name": "MyClass",
+  "description": "A clean, minimalist Classroom Management app designed with Material You Expressive design system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
