@@ -50,8 +50,8 @@ object DashboardPdfGenerator {
     private val PURPLE = Color.parseColor("#7E57C2")
     private val BLUE = Color.parseColor("#5C6BC0")
 
-    private val POSITIVE_TYPES = setOf("Impressed by Engaging", "Positive Curiosity", "Got Prize")
-    private val NEGATIVE_TYPES = setOf(
+    val POSITIVE_TYPES = setOf("Impressed by Engaging", "Positive Curiosity", "Got Prize")
+    val NEGATIVE_TYPES = setOf(
         "Named by Monitor", "Making Noise", "Name By Monitor",
         "Sent Outside", "Disturbed Class", "Scoldings"
     )

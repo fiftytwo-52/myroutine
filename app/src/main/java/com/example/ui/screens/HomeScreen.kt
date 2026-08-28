@@ -809,7 +809,15 @@ fun HeaderSection(viewModel: ClassFlowViewModel, teacherName: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.40f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(32.dp)
+            )
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -903,9 +911,9 @@ fun WavyNepaliDateBadge(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val baseR = size.minDimension * 0.40f
-            val amp = size.minDimension * 0.055f
-            val bumps = 12
+            val baseR = size.minDimension * 0.42f
+            val amp = size.minDimension * 0.028f
+            val bumps = 7
             val path = Path()
             val steps = 200
             for (i in 0..steps) {
@@ -1067,9 +1075,9 @@ fun LiveClassCard(
             .background(MaterialTheme.colorScheme.primaryContainer)
             .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(22.dp))
             .clickable { onClick() }
-            .padding(14.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1106,7 +1114,7 @@ fun LiveClassCard(
             Column {
                 Text(
                     text = classEntity.name,
-                    style = MaterialTheme.typography.titleLarge.copy(
+                    style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
@@ -1114,8 +1122,8 @@ fun LiveClassCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Room ${classEntity.roomNumber} • Subject: ${classEntity.subject}",
-                    style = MaterialTheme.typography.bodyMedium.copy(
+                    text = "Room ${classEntity.roomNumber} • ${classEntity.subject}",
+                    style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Medium
                     )
@@ -1133,7 +1141,7 @@ fun LiveClassCard(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFFFFD8E4))
-                            .padding(10.dp)
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1164,7 +1172,7 @@ fun LiveClassCard(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFFE0F2F1))
-                            .padding(10.dp)
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1211,8 +1219,8 @@ fun LiveClassCard(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 5.dp)
                 ) {
                     Icon(
                         imageVector = if (silencerEnabled) Icons.Default.NotificationsOff else Icons.Default.NotificationsActive,

@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="horizontal"
     android:gravity="center"
-    android:padding="8dp"
+    android:padding="4dp"
     android:background="@drawable/widget_pill_bg">
 
     <TextView
@@ -29,9 +29,9 @@
 
         <LinearLayout
             android:id="@+id/left_circle"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_marginEnd="12dp"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_marginEnd="16dp"
             android:orientation="vertical"
             android:gravity="center"
             android:padding="3dp"
@@ -52,9 +52,10 @@
                 android:layout_height="wrap_content"
                 android:text="10A"
                 android:textColor="#1B1C1F"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:maxLines="1"
+                android:maxWidth="48dp"
                 android:ellipsize="end" />
 
             <TextView
@@ -63,14 +64,14 @@
                 android:layout_height="wrap_content"
                 android:text="9:30 AM"
                 android:textColor="#41454C"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:maxLines="1" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/right_circle"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
             android:orientation="vertical"
             android:gravity="center"
             android:padding="3dp"
@@ -91,9 +92,10 @@
                 android:layout_height="wrap_content"
                 android:text="10B"
                 android:textColor="#1B1C1F"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:maxLines="1"
+                android:maxWidth="48dp"
                 android:ellipsize="end" />
 
             <TextView
@@ -102,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:text="10:00 AM"
                 android:textColor="#41454C"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:maxLines="1" />
         </LinearLayout>
     </LinearLayout>

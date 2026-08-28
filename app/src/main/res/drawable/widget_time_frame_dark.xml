@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vertical time widget pill frame variant for light wallpapers:
+     transparent background with a solid dark outline so it stays legible.
+     The oversized radius is clamped to half the shorter side, so the
+     outline always renders as a true pill/stadium at any widget size. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#00000000" />
+    <corners android:radius="100dp" />
+    <stroke android:width="2dp" android:color="#1F1F1F" />
+</shape>

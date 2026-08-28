@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "MyClass Time" vertical pill widget: the zero-padded hour ("01:")
+     stacked over the minutes ("05") with a small AM/PM underneath — nothing
+     else. The transparent root fills the launcher cell while the inner pill
+     wraps its content and stays centred, so the outline hugs the digits and
+     the widget stays slim no matter how wide the cell is. Fully transparent
+     background with a solid pill outline (white by default, dark over light
+     wallpapers); the rows are live TextClocks that tick by themselves. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_time_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/widget_time_pill"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:background="@drawable/widget_time_frame_light">
+
+        <TextClock
+            android:id="@+id/widget_time_hour"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="hh:"
+            android:format24Hour="HH:"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:layout_marginBottom="1dp" />
+
+        <TextClock
+            android:id="@+id/widget_time_minute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="mm"
+            android:format24Hour="mm"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false" />
+
+        <TextClock
+            android:id="@+id/widget_time_ampm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="a"
+            android:format24Hour=""
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.2"
+            android:layout_marginTop="3dp" />
+    </LinearLayout>
+</FrameLayout>

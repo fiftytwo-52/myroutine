@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Central helper that pushes fresh data into all four home-screen widgets.
+ * Central helper that pushes fresh data into all five home-screen widgets.
  * Called on widget onUpdate, from the routine alert service's 30-second loop,
  * from the 30-minute WidgetAlarmReceiver, and after any holiday/event/exam
  * save or delete so the widgets never show stale names.
@@ -34,6 +34,9 @@ object WidgetRefresh {
                 )
                 ExamsWidgetProvider.pushUpdate(
                     app, manager, idsOf(app, manager, ExamsWidgetProvider::class.java)
+                )
+                TimeWidgetProvider.pushUpdate(
+                    app, manager, idsOf(app, manager, TimeWidgetProvider::class.java)
                 )
             } catch (e: Exception) {
                 android.util.Log.e("WidgetRefresh", "Failed to refresh widgets: ${e.message}")

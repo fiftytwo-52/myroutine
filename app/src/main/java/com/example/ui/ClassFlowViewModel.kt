@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
@@ -12,6 +13,8 @@ import com.example.data.entity.TeacherProfileEntity
 import com.example.data.entity.StudentEntity
 import com.example.data.entity.TeacherNoteEntity
 import com.example.data.repository.ClassScheduleRepository
+import com.example.notification.ClassFlowService
+import com.example.widget.WidgetRefresh
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -269,12 +272,15 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
             } else {
                 repository.updateClass(entity)
             }
+            // Keep the home-screen classes widget in sync with routine edits.
+            WidgetRefresh.refreshAll(getApplication())
         }
     }
 
     fun deleteClass(classEntity: ClassEntity) {
         viewModelScope.launch {
             repository.deleteClass(classEntity)
+            WidgetRefresh.refreshAll(getApplication())
         }
     }
 
@@ -292,6 +298,7 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
             for (t in templates) {
                 repository.insertClass(t)
             }
+            WidgetRefresh.refreshAll(getApplication())
         }
     }
 
@@ -309,6 +316,7 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                     repository.insertClass(c.copy(id = 0, dayOfWeek = day))
                 }
             }
+            WidgetRefresh.refreshAll(getApplication())
         }
     }
 
@@ -1535,16 +1543,36 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // The "Bomb Everything" Button
-    fun bombEverything() {
+    // The "Bomb Everything" Button — a true factory reset.
+    // Room's clearAllTables() is a blocking call that throws when invoked on
+    // the main thread; viewModelScope.launch defaults to Main, so the old
+    // version silently failed in the empty catch. Wipe on Dispatchers.IO,
+    // then stop the tracking service and push empty data to all widgets so
+    // the app returns to a genuinely fresh, first-run state.
+    fun bombEverything(onDone: (Boolean) -> Unit = {}) {
+        val appContext = getApplication<Application>()
         viewModelScope.launch {
-            try {
-                database.clearAllTables()
-                preferencesManager.clearAllPreferences()
-                // App will effectively reset to fresh state
+            val success = try {
+                withContext(Dispatchers.IO) {
+                    database.clearAllTables()
+                    preferencesManager.clearAllPreferences()
+                }
+                true
             } catch (e: Exception) {
-                // handle error
+                android.util.Log.e("ClassFlowViewModel", "Factory reset failed: ${e.message}")
+                false
             }
+            if (success) {
+                // Stop the in-class foreground service so no stale alerts fire.
+                try {
+                    appContext.stopService(Intent(appContext, ClassFlowService::class.java))
+                } catch (e: Exception) {
+                    android.util.Log.e("ClassFlowViewModel", "Service stop failed: ${e.message}")
+                }
+                // Refresh every home-screen widget with the now-empty data.
+                WidgetRefresh.refreshAll(appContext)
+            }
+            onDone(success)
         }
     }
 

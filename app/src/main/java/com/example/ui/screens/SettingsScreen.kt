@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,7 +26,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +43,7 @@ import com.example.data.entity.ClassEntity
 import com.example.data.entity.TeacherProfileEntity
 import com.example.data.entity.ManagedClassEntity
 import com.example.ui.ClassFlowViewModel
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -97,7 +103,8 @@ fun SettingsScreen(
                                 3 -> "Classes"
                                 4 -> "Holidays"
                                 5 -> "Appearance"
-                                6 -> "Dashboard"
+                                6 -> "System Stats"
+                                7 -> "About This App"
                                 else -> "Settings"
                             }
                         },
@@ -127,9 +134,31 @@ fun SettingsScreen(
             
             if (selectedSettingGroup == null) {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = 110.dp // clearance for the floating pill nav bar
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item {
+                        SettingsMenuItem(
+                            title = "System Stats",
+                            subtitle = "Live dashboard, charts & PDF report",
+                            icon = Icons.Default.Insights,
+                            onClick = { selectedSettingGroup = 6 }
+                        )
+                    }
+                    item {
+                        Text(
+                            "GENERAL SETTINGS",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 6.dp, top = 6.dp)
+                        )
+                    }
                     item {
                         SettingsMenuItem(
                             title = "Profile & Automation",
@@ -172,18 +201,18 @@ fun SettingsScreen(
                     }
                     item {
                         SettingsMenuItem(
-                            title = "Dashboard",
-                            subtitle = "System-wide statistics & PDF report",
-                            icon = Icons.Default.Insights,
-                            onClick = { selectedSettingGroup = 6 }
-                        )
-                    }
-                    item {
-                        SettingsMenuItem(
                             title = "Data Backup",
                             subtitle = "Export JSON or wipe internal data",
                             icon = Icons.Default.CloudSync,
                             onClick = { selectedSettingGroup = 2 }
+                        )
+                    }
+                    item {
+                        SettingsMenuItem(
+                            title = "About This App",
+                            subtitle = "What MyClass does & how to use it",
+                            icon = Icons.Default.School,
+                            onClick = { selectedSettingGroup = 7 }
                         )
                     }
                     item {
@@ -249,6 +278,7 @@ fun SettingsScreen(
                             viewModel = viewModel,
                             context = context
                         )
+                        7 -> AboutAppTab()
                     }
                 }
             }
@@ -1212,7 +1242,7 @@ fun calculateAgeInt(dobString: String?): Int? {
 @Composable
 fun DeveloperInfoCard() {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 48.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
     ) {
@@ -1231,6 +1261,189 @@ fun DeveloperInfoCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun AboutAppTab() {
+    LazyColumn(
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 110.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.School,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(34.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "MYCLASS",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "Your pocket teaching companion — fully offline",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Text(
+                        "MyClass is a private, offline-first teacher diary. It keeps your weekly routine, students, homework, exams, behaviour notes and holidays in one place on your phone — no account, no server, no internet needed. Everything you enter stays inside the app's local storage.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        "WHAT YOU CAN DO WITH IT",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.Event,
+                        title = "Run your day from the Home screen",
+                        description = "See the ongoing class on a LIVE card, get 2-minute heads-up reminders before every period, and log class work in one tap."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.People,
+                        title = "Manage students & homework",
+                        description = "Keep rosters per class, assign homework with checking dates, and evaluate submissions as done, half or not done."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.CheckCircle,
+                        title = "Record behaviour & activity",
+                        description = "Log positive and negative student activities — the app turns them into scores on the System Stats dashboard."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.AutoStories,
+                        title = "Track the syllabus",
+                        description = "Store chapter lists per subject and class, and tick them off as you complete them in class."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.Insights,
+                        title = "Exams, marks & reports",
+                        description = "Enter exam marks, view averages, pass rates and top performers, then export everything as a clean PDF report."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.StickyNote2,
+                        title = "Notes, events & holidays",
+                        description = "Keep dated diary notes and events, and let weekly/public holidays hide class days automatically."
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "AUTOMATION & WIDGETS",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.NotificationsActive,
+                        title = "Smart alerts while you teach",
+                        description = "The app silences itself during class hours when enabled, and refreshes its widgets every 30 seconds while school is in session."
+                    )
+                    AboutUseCaseRow(
+                        icon = Icons.Default.School,
+                        title = "Five home-screen widgets",
+                        description = "Today's Classes (two rings: red = ongoing, green = next), a wallpaper-aware pill-shaped Time clock, upcoming Events, Holidays and Exams — all updated automatically."
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "PRIVACY & YOUR DATA",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Text(
+                        "MyClass works completely offline and only asks for notification permission. Your data never leaves the device. Use Data Backup to export or restore a JSON copy of everything, or Factory Reset to wipe the app back to a brand-new state.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutUseCaseRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(
+            icon,
+            null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1499,9 +1712,16 @@ fun DataBackupTab(viewModel: ClassFlowViewModel) {
                     title = "☢️ BOMB EVERYTHING",
                     text = "This will PERMANENTLY ERASE all your classes, students, notes, homeworks, and settings. This action cannot be undone.",
                     onConfirm = {
-                        viewModel.bombEverything()
                         showBombDialog = false
-                        Toast.makeText(context, "All data wiped.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Wiping all data…", Toast.LENGTH_SHORT).show()
+                        viewModel.bombEverything { success ->
+                            Toast.makeText(
+                                context,
+                                if (success) "All data wiped — fresh system ready!"
+                                else "Reset failed. Close and reopen the app, then try again.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     },
                     onDismiss = { showBombDialog = false }
                 )
@@ -1697,18 +1917,111 @@ fun DashboardTab(
     val submissions by viewModel.allSubmissions.collectAsStateWithLifecycle(emptyList())
     val activities by viewModel.allActivities.collectAsStateWithLifecycle(emptyList())
     val exams by viewModel.allExams.collectAsStateWithLifecycle(emptyList())
+    val marks by viewModel.allMarks.collectAsStateWithLifecycle(emptyList())
     val events by viewModel.allDatedEvents.collectAsStateWithLifecycle(emptyList())
     val holidays by viewModel.allHolidays.collectAsStateWithLifecycle(emptyList())
     val weeklyHolidays by viewModel.weeklyHolidays.collectAsStateWithLifecycle(emptySet())
     val syllabi by viewModel.allSyllabuses.collectAsStateWithLifecycle(emptyList())
+    val dec = remember { DecimalFormat("#.#") }
+    val dateFormat = remember { SimpleDateFormat("MMM d", Locale.US) }
 
+    val hwTotal = homework.size
+    val hwDoneCount = homework.count { it.isCompleted }
+    val subDone = submissions.count { it.status.lowercase() == "done" }
+    val subHalf = submissions.count { it.status.lowercase() == "half done" }
+    val subNot = submissions.count { it.status.lowercase() == "not done" }
+    val subTotal = submissions.size
     val completedEvents = events.count { it.eventStatus == "COMPLETED" }
-    val cancelledEvents = events.count { it.eventStatus == "CANCELLED" || it.eventStatus == "FAILED" }
-    val pendingEvents = events.size - completedEvents - cancelledEvents
+    val cancelledEvents = events.count { it.eventStatus == "CANCELLED" }
+    val failedEvents = events.count { it.eventStatus == "FAILED" }
+    val pendingEvents = events.size - completedEvents - cancelledEvents - failedEvents
+    val behaviorPositive = activities.count { it.activityType in DashboardPdfGenerator.POSITIVE_TYPES }
+    val behaviorNegative = activities.count { it.activityType in DashboardPdfGenerator.NEGATIVE_TYPES }
+    val behaviorByType = remember(activities) {
+        activities.groupingBy { it.activityType }.eachCount().toSortedMap()
+    }
+
+    val marksForStudent = remember(marks) { marks.groupBy { it.studentId } }
+    val studentsByClass = remember(students) { students.groupBy { it.className } }
+    val classNames = remember(managedClasses, studentsByClass) {
+        managedClasses.map { it.name }.ifEmpty { studentsByClass.keys.sorted() }
+    }
+
+    val studentPerf = remember(students, submissions, activities, marks, exams) {
+        students.map { s ->
+            val subs = submissions.filter { it.studentId == s.id }
+            val done = subs.count { it.status.lowercase() == "done" }
+            val acts = activities.filter { it.studentId == s.id }
+            val pos = acts.count { it.activityType in DashboardPdfGenerator.POSITIVE_TYPES }
+            val neg = acts.count { it.activityType in DashboardPdfGenerator.NEGATIVE_TYPES }
+            val pcts = marksForStudent[s.id].orEmpty().mapNotNull { m ->
+                val ex = exams.find { it.id == m.examId } ?: return@mapNotNull null
+                val full = ex.fullMarks.toDoubleOrNull()
+                val got = m.marksObtained.toDoubleOrNull()
+                if (full != null && full > 0 && got != null) got / full * 100.0 else null
+            }
+            val avg = if (pcts.isEmpty()) null else pcts.average()
+            val hwRate = if (subs.isEmpty()) 1.0 else done.toDouble() / subs.size
+            val beh = (pos - 2 * neg).coerceIn(-5, 10)
+            val behScore = ((beh + 5) / 15.0) * 20.0
+            val examScore = (avg ?: 0.0) * 0.4
+            StudentPerfRow(s.name, s.className, done, subs.size, pos, neg, avg, hwRate * 40 + behScore + examScore)
+        }.sortedByDescending { it.score }
+    }
+
+    val examStats = remember(exams, marks, students) {
+        exams.map { ex ->
+            val exMarks = marks.filter { it.examId == ex.id }
+            val nums = exMarks.mapNotNull { it.marksObtained.toDoubleOrNull() }
+            val passInt = ex.passMarks.toIntOrNull() ?: 40
+            val passCount = nums.count { it >= passInt }
+            val maxV = nums.maxOrNull()
+            val topScorer = if (maxV == null) "—" else exMarks.firstOrNull { it.marksObtained.toDoubleOrNull() == maxV }
+                ?.let { st -> students.find { s -> s.id == st.studentId }?.name } ?: "—"
+            ExamStatRow(
+                ex.name,
+                ex.targetClassNames?.replace(",", ", ")?.ifBlank { "All Classes" } ?: "All Classes",
+                exMarks.size,
+                if (nums.isEmpty()) 0.0 else nums.average(),
+                maxV ?: 0.0,
+                topScorer,
+                if (nums.isEmpty()) 0 else passCount * 100 / nums.size
+            )
+        }.sortedByDescending { it.average }
+    }
+
+    val classRows = remember(classNames, students, homework, classes, submissions, activities, marks, exams) {
+        classNames.map { cn ->
+            val classStudents = students.filter { it.className == cn }
+            val classHw = homework.count { hw -> classes.find { it.id == hw.classId }?.name == cn }
+            val classSubs = submissions.filter { sub -> classStudents.any { it.id == sub.studentId } }
+            val done = classSubs.count { it.status.lowercase() == "done" }
+            val pos = activities.count { a -> classStudents.any { it.id == a.studentId } && a.activityType in DashboardPdfGenerator.POSITIVE_TYPES }
+            val neg = activities.count { a -> classStudents.any { it.id == a.studentId } && a.activityType in DashboardPdfGenerator.NEGATIVE_TYPES }
+            val percents = classStudents.flatMap { st ->
+                marksForStudent[st.id].orEmpty().mapNotNull { m ->
+                    val ex = exams.find { it.id == m.examId } ?: return@mapNotNull null
+                    val full = ex.fullMarks.toDoubleOrNull()
+                    val got = m.marksObtained.toDoubleOrNull()
+                    if (full != null && full > 0 && got != null) got / full * 100.0 else null
+                }
+            }
+            listOf(
+                cn,
+                classStudents.size.toString(),
+                classHw.toString(),
+                done.toString(),
+                if (classSubs.isEmpty()) "—" else "${done * 100 / classSubs.size}%",
+                pos.toString(),
+                neg.toString(),
+                if (percents.isEmpty()) "—" else dec.format(percents.average()) + "%"
+            )
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -1722,12 +2035,12 @@ fun DashboardTab(
                         Icon(Icons.Default.Insights, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("SYSTEM DASHBOARD", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text("SYSTEM STATS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Text("Every dataset, one snapshot", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                         }
                     }
                     Text(
-                        "Live summary of your students, homeworks, behavior logs, exams, events and holidays. Export a beautiful PDF report with charts below.",
+                        "Live charts and tables of your students, homeworks, behavior logs, exams, events and holidays — everything the PDF report contains, right here on screen.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1738,7 +2051,7 @@ fun DashboardTab(
                     ) {
                         Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Export Dashboard as PDF")
+                        Text("Export Full Report as PDF")
                     }
                 }
             }
@@ -1746,56 +2059,172 @@ fun DashboardTab(
 
         item {
             DashboardStatCard(
-                title = "STUDENTS",
+                title = "AT A GLANCE",
                 values = listOf(
-                    Triple("Registered", students.size.toString(), Color(0xFF3F51B5)),
-                    Triple("Managed Classes", managedClasses.size.toString(), Color(0xFF26A69A))
+                    Triple("Students", students.size.toString(), StatsIndigo),
+                    Triple("Classes", managedClasses.size.toString(), StatsTeal),
+                    Triple("Routine Periods", classes.size.toString(), StatsBlue),
+                    Triple("Homeworks", hwTotal.toString(), StatsGreen),
+                    Triple("Exams", exams.size.toString(), StatsPurple),
+                    Triple("Events", events.size.toString(), StatsAmber),
+                    Triple("HW Completed", if (hwTotal > 0) "${hwDoneCount * 100 / hwTotal}%" else "0%", StatsGreen),
+                    Triple("HW Evaluations", subTotal.toString(), StatsTeal),
+                    Triple("Behavior Logs", activities.size.toString(), StatsPurple),
+                    Triple("Holidays", holidays.size.toString(), StatsAmber),
+                    Triple("Weekly Offs", weeklyHolidays.size.toString(), StatsRed),
+                    Triple("Syllabi", syllabi.size.toString(), StatsBlue)
                 )
             )
         }
+
+        item {
+            DonutCard(
+                title = "HOMEWORK STATUS",
+                parts = listOf(
+                    Triple("Done", subDone.toFloat(), StatsGreen),
+                    Triple("Half Done", subHalf.toFloat(), StatsAmber),
+                    Triple("Not Done", subNot.toFloat(), StatsRed)
+                ),
+                centerValue = subTotal.toString(),
+                centerLabel = "Evaluations"
+            )
+        }
+
+        item {
+            DonutCard(
+                title = "EVENT OUTCOMES",
+                parts = listOf(
+                    Triple("Completed", completedEvents.toFloat(), StatsGreen),
+                    Triple("Cancelled", cancelledEvents.toFloat(), StatsAmber),
+                    Triple("Failed", failedEvents.toFloat(), StatsRed),
+                    Triple("Pending", pendingEvents.toFloat(), StatsBlue)
+                ),
+                centerValue = events.size.toString(),
+                centerLabel = "Events"
+            )
+        }
+
+        item {
+            StatsTableCard(
+                title = "CLASS DETAILS",
+                headers = listOf("Class", "Students", "HW Given", "HW Done", "HW Rate", "Pos+", "Neg–", "Avg Exam"),
+                rows = classRows,
+                weights = listOf(0.16f, 0.11f, 0.11f, 0.10f, 0.10f, 0.08f, 0.08f, 0.12f),
+                emptyText = "No classes yet"
+            )
+        }
+
+        item {
+            StatsTableCard(
+                title = "TOP PERFORMERS (ALL-TIME SCORE)",
+                headers = listOf("#", "Student", "Class", "HW%", "Pos+", "Neg–", "Avg Exam", "Score"),
+                rows = studentPerf.take(15).mapIndexed { i, p ->
+                    listOf(
+                        (i + 1).toString(),
+                        p.name,
+                        p.className,
+                        if (p.hwTotal > 0) "${p.hwDone * 100 / p.hwTotal}%" else "—",
+                        p.positive.toString(),
+                        p.negative.toString(),
+                        p.avgPercent?.let { dec.format(it) + "%" } ?: "—",
+                        dec.format(p.score)
+                    )
+                },
+                weights = listOf(0.05f, 0.22f, 0.11f, 0.09f, 0.08f, 0.08f, 0.14f, 0.12f),
+                emptyText = "No students yet"
+            )
+        }
+
+        item {
+            StatsTableCard(
+                title = "EXAM ANALYSIS",
+                headers = listOf("Exam", "Classes", "Students", "Avg", "Highest", "Top Scorer", "Pass%"),
+                rows = examStats.map { r ->
+                    listOf(r.name, r.classes, r.count.toString(), dec.format(r.average), dec.format(r.highest), r.topScorer, "${r.passPercent}%")
+                },
+                weights = listOf(0.20f, 0.22f, 0.11f, 0.10f, 0.10f, 0.18f, 0.10f),
+                emptyText = "No exams yet"
+            )
+        }
+
+        if (examStats.isNotEmpty()) {
+            item {
+                BarChartCard(
+                    title = "AVERAGE MARKS CHART",
+                    items = examStats.map { it.name to it.average }
+                )
+            }
+        }
+
+        item {
+            StatsTableCard(
+                title = "BEHAVIOR LOGS",
+                headers = listOf("Behavior Type", "Count"),
+                rows = behaviorByType.entries.map { listOf(it.key, it.value.toString()) },
+                weights = listOf(0.6f, 0.4f),
+                accentColumn = 1,
+                emptyText = "No behavior logs yet"
+            )
+        }
+
         item {
             DashboardStatCard(
-                title = "HOMEWORK",
+                title = "BEHAVIOR SUMMARY",
                 values = listOf(
-                    Triple("Given", homework.size.toString(), Color(0xFF2E7D32)),
-                    Triple("Completed", homework.count { it.isCompleted }.toString(), Color(0xFF558B2F)),
-                    Triple("Evaluations", submissions.size.toString(), Color(0xFF26A69A))
+                    Triple("Positive Logs", behaviorPositive.toString(), StatsGreen),
+                    Triple("Negative Logs", behaviorNegative.toString(), StatsRed),
+                    Triple("Total Logs", activities.size.toString(), StatsPurple)
                 )
             )
         }
+
         item {
             DashboardStatCard(
-                title = "BEHAVIOR & EXAMS",
+                title = "HOLIDAYS",
                 values = listOf(
-                    Triple("Behavior Logs", activities.size.toString(), Color(0xFF7E57C2)),
-                    Triple("Exams", exams.size.toString(), Color(0xFFF9A825)),
-                    Triple("Routine Periods", classes.size.toString(), Color(0xFF5C6BC0))
-                )
+                    Triple("Weekly Off Days", weeklyHolidays.size.toString(), StatsAmber),
+                    Triple("Saved Ranges", holidays.size.toString(), StatsBlue)
+                ),
+                hint = if (holidays.isEmpty() && weeklyHolidays.isEmpty()) "No holidays saved yet" else null
             )
         }
+
         item {
-            DashboardStatCard(
-                title = "EVENTS & HOLIDAYS",
-                values = listOf(
-                    Triple("Completed", completedEvents.toString(), Color(0xFF2E7D32)),
-                    Triple("Cancelled/Failed", cancelledEvents.toString(), Color(0xFFC62828)),
-                    Triple("Pending", pendingEvents.toString(), Color(0xFF1565C0)),
-                    Triple("Holidays", "${holidays.size} + ${weeklyHolidays.size} weekly", Color(0xFFF9A825))
-                )
+            StatsTableCard(
+                title = "SYLLABUS OVERVIEW",
+                headers = listOf("Subject", "Class"),
+                rows = syllabi.map { listOf(it.subject, it.className) },
+                weights = listOf(0.6f, 0.4f),
+                emptyText = "No syllabi saved yet"
             )
         }
+
         item {
-            DashboardStatCard(
-                title = "SYLLABUS",
-                values = listOf(
-                    Triple("Registered Syllabi", syllabi.size.toString(), Color(0xFF26A69A))
-                )
+            StatsTableCard(
+                title = "REGISTERED EVENTS",
+                headers = listOf("Event", "Date", "Status"),
+                rows = events.sortedBy { it.eventEpochDay ?: 0L }.take(25).map { ev ->
+                    val d = ev.eventEpochDay?.let {
+                        try {
+                            dateFormat.format(java.util.Date(it * 86400000L))
+                        } catch (e: Exception) { "" }
+                    } ?: ""
+                    listOf(ev.title, d, ev.eventStatus.ifBlank { "Pending" })
+                },
+                weights = listOf(0.5f, 0.2f, 0.3f),
+                accentColumn = 2,
+                emptyText = "No events registered yet"
             )
         }
     }
 }
 @Composable
-private fun DashboardStatCard(title: String, values: List<Triple<String, String, Color>>) {
+private fun DashboardStatCard(
+    title: String,
+    values: List<Triple<String, String, Color>>,
+    tilesPerRow: Int = 3,
+    hint: String? = null
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -1803,21 +2232,304 @@ private fun DashboardStatCard(title: String, values: List<Triple<String, String,
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                values.forEach { (label, value, color) ->
+            values.chunked(tilesPerRow).forEach { rowValues ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    rowValues.forEach { (label, value, color) ->
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(color.copy(alpha = 0.14f))
+                                .padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = color)
+                            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (rowValues.size < tilesPerRow) {
+                        repeat(tilesPerRow - rowValues.size) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+            if (hint != null) {
+                Text(hint, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DonutCard(
+    title: String,
+    parts: List<Triple<String, Float, Color>>,
+    centerValue: String,
+    centerLabel: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                DonutChart(
+                    parts = parts,
+                    centerValue = centerValue,
+                    centerLabel = centerLabel,
+                    modifier = Modifier.size(120.dp)
+                )
+                DonutLegend(parts = parts)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DonutChart(
+    parts: List<Triple<String, Float, Color>>,
+    centerValue: String,
+    centerLabel: String,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = 22.dp.toPx()
+            val inset = stroke / 2 + 2.dp.toPx()
+            val arcSize = Size(size.width - inset * 2, size.height - inset * 2)
+            val total = parts.sumOf { it.second.toDouble() }.toFloat()
+            if (total <= 0f) {
+                drawArc(
+                    color = Color.Gray.copy(alpha = 0.25f),
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = Offset(inset, inset),
+                    size = arcSize,
+                    style = Stroke(width = stroke, cap = StrokeCap.Butt)
+                )
+            } else {
+                var startAngle = -90f
+                parts.forEach { (_, value, color) ->
+                    val sweep = value / total * 360f
+                    if (sweep > 0.5f) {
+                        drawArc(
+                            color = color,
+                            startAngle = startAngle,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            topLeft = Offset(inset, inset),
+                            size = arcSize,
+                            style = Stroke(width = stroke, cap = StrokeCap.Butt)
+                        )
+                    }
+                    startAngle += sweep
+                }
+            }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(centerValue, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            Text(centerLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun DonutLegend(parts: List<Triple<String, Float, Color>>) {
+    val total = parts.sumOf { it.second.toDouble() }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        parts.forEach { (label, value, color) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                )
+                Spacer(Modifier.width(10.dp))
+                val pct = if (total > 0) (value / total * 100).toInt() else 0
+                Text(
+                    "$label • ${value.toInt()} ($pct%)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatsTableCard(
+    title: String,
+    headers: List<String>,
+    rows: List<List<String>>,
+    weights: List<Float>,
+    accentColumn: Int? = null,
+    emptyText: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            if (rows.isEmpty()) {
+                Text(emptyText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val needed = (headers.size * 82).dp
+                    val tableWidth = if (needed > maxWidth) needed else maxWidth
                     Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(color.copy(alpha = 0.14f))
-                            .padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .width(tableWidth)
+                            .horizontalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = color)
-                        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                                .padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            headers.forEachIndexed { i, h ->
+                                Text(
+                                    h,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(weights.getOrElse(i) { 1f })
+                                        .padding(end = 6.dp)
+                                )
+                            }
+                        }
+                        rows.forEachIndexed { r, row ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (r % 2 == 0) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                        else Color.Transparent
+                                    )
+                                    .padding(horizontal = 10.dp, vertical = 8.dp)
+                            ) {
+                                row.forEachIndexed { i, cell ->
+                                    Text(
+                                        cell,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = when {
+                                            i == 0 -> MaterialTheme.colorScheme.onSurface
+                                            accentColumn == i -> StatsTeal
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .weight(weights.getOrElse(i) { 1f })
+                                            .padding(end = 6.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun BarChartCard(title: String, items: List<Pair<String, Double>>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            if (items.isEmpty()) {
+                Text("No data yet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                val maxAvg = items.maxOf { it.second }.coerceAtLeast(1.0)
+                items.forEach { (name, avg) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.width(96.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(14.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(StatsIndigo.copy(alpha = 0.14f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth((avg / (maxAvg * 1.15)).coerceIn(0.02, 1.0).toFloat())
+                                    .clip(RoundedCornerShape(7.dp))
+                                    .background(StatsIndigo)
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            DecimalFormat("#.#").format(avg),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = StatsIndigo
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val StatsIndigo = Color(0xFF3F51B5)
+private val StatsGreen = Color(0xFF2E7D32)
+private val StatsAmber = Color(0xFFF9A825)
+private val StatsRed = Color(0xFFC62828)
+private val StatsTeal = Color(0xFF26A69A)
+private val StatsPurple = Color(0xFF7E57C2)
+private val StatsBlue = Color(0xFF5C6BC0)
+
+private data class StudentPerfRow(
+    val name: String,
+    val className: String,
+    val hwDone: Int,
+    val hwTotal: Int,
+    val positive: Int,
+    val negative: Int,
+    val avgPercent: Double?,
+    val score: Double
+)
+
+private data class ExamStatRow(
+    val name: String,
+    val classes: String,
+    val count: Int,
+    val average: Double,
+    val highest: Double,
+    val topScorer: String,
+    val passPercent: Int
+)
