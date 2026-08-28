@@ -14,6 +14,17 @@
 - [x] Add confirmation warnings before all identified user-facing delete/reset operations, including JSON replacement restore.
 - [x] Synchronize Notes and Settings calendar highlighting for persisted holidays and dated events.
 - [x] Port the class-window routine service, exact-restart alarm, boot re-arm, and all four home-screen widgets into this `com.example` codebase and verify with `assembleDebug`.
+- [x] Redesign the Dashboard Nepali date badge as a true wavy circle (sine-modulated 12-bump Canvas path) with a small Nepali year badge.
+- [x] Compact the Dashboard ongoing-class (LIVE) card height.
+- [x] Fix exam creation target-class multiselect so all classes are visible/selectable via chips.
+- [x] Rename the Settings classes tab header to "Add / Remove Classes" with a clarifying subtitle.
+- [x] Fix the "Done" button in the exam detailed-view popup so it dismisses.
+- [x] Add the target "Class:" line to the exam PDF export header.
+- [x] Add a system-wide Light/Dark theme switcher in Settings (Appearance tab) with DataStore persistence and status-bar icon sync.
+- [x] Mark dated events as Completed/Cancelled/Failed from the Dashboard with a status popup.
+- [x] Show short class names (e.g. "1A") in schedule period thumbnail circles.
+- [x] Add a Settings → Dashboard screen with system-wide statistics and multi-page PDF export via the print framework.
+- [x] Verification pass: fixed 6 compile errors left by the previous agent (Paint color shadowing in DashboardPdfGenerator, Modifier.weight outside RowScope in SettingsScreen) and verified `assembleDebug` exits 0.
 
 - [x] Read and reviewed [`upgrade.md`](upgrade.md), including all four upgrade phases.
 - [x] Confirmed the project already uses Room persistence for core entities, DAOs, and the database.

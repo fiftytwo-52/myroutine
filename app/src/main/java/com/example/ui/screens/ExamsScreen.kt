@@ -261,6 +261,48 @@ fun AddExamDialog(managedClasses: List<ManagedClassEntity>, onDismiss: () -> Uni
                     label = { Text("Subject") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Target class multi-select lives high up so every available
+                // section is immediately visible (previously pushed off-screen
+                // by the date + marks fields, hiding everything but "All Classes").
+                Text(
+                    text = if (selectedClasses.isEmpty()) "Target Classes: All Classes"
+                           else "Target Classes (${selectedClasses.size}): ${selectedClasses.joinToString(", ")}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedClasses.isEmpty(),
+                        onClick = { selectedClasses = emptySet() },
+                        label = { Text("All Classes") }
+                    )
+                    managedClasses.forEach { mc ->
+                        FilterChip(
+                            selected = selectedClasses.contains(mc.name),
+                            onClick = {
+                                if (selectedClasses.contains(mc.name)) {
+                                    selectedClasses = selectedClasses - mc.name
+                                } else {
+                                    selectedClasses = selectedClasses + mc.name
+                                }
+                            },
+                            label = { Text(mc.name) }
+                        )
+                    }
+                }
+                if (managedClasses.isEmpty()) {
+                    Text(
+                        "No classes added yet. Go to Settings → Classes to create sections (e.g. 7A, 10B).",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 OutlinedTextField(
                     value = date,
                     onValueChange = { },
@@ -291,31 +333,8 @@ fun AddExamDialog(managedClasses: List<ManagedClassEntity>, onDismiss: () -> Uni
                     )
                 }
                 
-                Text("Target Classes (Multi-select):", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedClasses.isEmpty(),
-                        onClick = { selectedClasses = emptySet() },
-                        label = { Text("All Classes") }
-                    )
-                    managedClasses.forEach { mc ->
-                        FilterChip(
-                            selected = selectedClasses.contains(mc.name),
-                            onClick = {
-                                if (selectedClasses.contains(mc.name)) {
-                                    selectedClasses = selectedClasses - mc.name
-                                } else {
-                                    selectedClasses = selectedClasses + mc.name
-                                }
-                            },
-                            label = { Text(mc.name) }
-                        )
-                    }
                 }
-            }
+
         },
         confirmButton = {
             Button(
@@ -422,18 +441,26 @@ fun ExamDetailsDialog(
         },
         confirmButton = {
             val context = LocalContext.current
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Button(
                     onClick = { viewModel.generateExamPdfReport(context, exam) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                ) { Text("Export") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) { Text("Export", maxLines = 1) }
                 Button(
-                    onClick = { 
+                    onClick = {
                         if (classesToShow.isNotEmpty()) onUpdateMarks(classesToShow[0])
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) { Text("Edit Marks") }
-                Button(onClick = onDismiss) { Text("Done") }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) { Text("Edit Marks", maxLines = 1) }
+                Button(
+                    onClick = onDismiss,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) { Text("Done", maxLines = 1) }
             }
         }
     )

@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -60,6 +63,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -672,6 +678,7 @@ fun HomeworkEvaluationDialog(
 @Composable
 fun HeaderSection(viewModel: ClassFlowViewModel, teacherName: String) {
     var showOffsetDialog by remember { mutableStateOf(false) }
+    var eventStatusTarget by remember { mutableStateOf<com.example.data.entity.TeacherNoteEntity?>(null) }
     val nepaliDateOffset by viewModel.nepaliDateOffset.collectAsStateWithLifecycle()
     val datedEvents by viewModel.allDatedEvents.collectAsStateWithLifecycle(initialValue = emptyList())
 
@@ -733,12 +740,78 @@ fun HeaderSection(viewModel: ClassFlowViewModel, teacherName: String) {
         )
     }
 
+    eventStatusTarget?.let { evt ->
+        val evtDateStr = if (evt.eventEpochDay != null) {
+            java.time.format.DateTimeFormatter.ofPattern("EEE, MMM d").format(java.time.LocalDate.ofEpochDay(evt.eventEpochDay))
+        } else ""
+        AlertDialog(
+            onDismissRequest = { eventStatusTarget = null },
+            title = { Text(evt.title, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Event on $evtDateStr • Current status: ${evt.eventStatus.ifBlank { "Pending" }}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = {
+                            viewModel.setEventStatus(evt, "COMPLETED")
+                            eventStatusTarget = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Mark Success / Completed")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.setEventStatus(evt, "CANCELLED")
+                            eventStatusTarget = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Cancel, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Mark Cancelled")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.setEventStatus(evt, "FAILED")
+                            eventStatusTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Warning, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Mark Failed")
+                    }
+                    if (evt.eventStatus.isNotBlank()) {
+                        TextButton(
+                            onClick = {
+                                viewModel.setEventStatus(evt, "")
+                                eventStatusTarget = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Reset to Pending") }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { eventStatusTarget = null }) { Text("Close") }
+            }
+        )
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -756,33 +829,119 @@ fun HeaderSection(viewModel: ClassFlowViewModel, teacherName: String) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            nextEvent?.let {
-                Text(
-                    text = "Next event: ${it.title} • $nextEventDateStr",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.clickable {
-                        showOffsetDialog = true
-                    }
+            nextEvent?.let { evt ->
+                val evtStatus = evt.eventStatus
+                val settled = evtStatus == "COMPLETED" || evtStatus == "CANCELLED" || evtStatus == "FAILED"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { eventStatusTarget = evt }
+                        .padding(vertical = 2.dp)
                 ) {
+                    Icon(
+                        imageVector = when (evtStatus) {
+                            "COMPLETED" -> Icons.Default.CheckCircle
+                            "CANCELLED", "FAILED" -> Icons.Default.Cancel
+                            else -> Icons.Default.Event
+                        },
+                        contentDescription = "Event status",
+                        tint = when {
+                            evtStatus == "COMPLETED" -> Color(0xFF2E7D32)
+                            settled -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.primary
+                        },
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${nepaliDate.monthName}, ${com.example.ui.screens.CalendarUtils.toNepaliNumber(nepaliDate.day)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
+                        text = buildString {
+                            append("Next event: ${evt.title} • $nextEventDateStr")
+                            if (evtStatus.isNotBlank()) {
+                                append(" • ")
+                                append(evtStatus.lowercase().replaceFirstChar(Char::uppercase))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            textDecoration = if (settled) TextDecoration.LineThrough else null
+                        )
                     )
                 }
             }
+        }
+        // Nepali date badge — a wavy sun-like circle holding the BS month,
+        // a heavy day number and a small Nepali year underneath.
+        WavyNepaliDateBadge(
+            month = nepaliDate.monthName,
+            day = com.example.ui.screens.CalendarUtils.toNepaliNumber(nepaliDate.day),
+            year = com.example.ui.screens.CalendarUtils.toNepaliNumber(nepaliDate.year),
+            onClick = { showOffsetDialog = true }
+        )
+    }
+}
+/** Wavy sun-like circle badge showing the Bikram Sambat date with a small year strip. */
+@Composable
+fun WavyNepaliDateBadge(
+    month: String,
+    day: String,
+    year: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val container = MaterialTheme.colorScheme.primaryContainer
+    val border = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+    val content = MaterialTheme.colorScheme.onPrimaryContainer
+
+    Box(
+        modifier = modifier
+            .size(98.dp)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val baseR = size.minDimension * 0.40f
+            val amp = size.minDimension * 0.055f
+            val bumps = 12
+            val path = Path()
+            val steps = 200
+            for (i in 0..steps) {
+                val angle = (i.toFloat() / steps) * (2f * PI.toFloat())
+                val r = baseR + amp * sin(angle * bumps)
+                val x = cx + r * cos(angle)
+                val y = cy + r * sin(angle)
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+            drawPath(path, color = container)
+            drawPath(path, color = border, style = Stroke(width = 3.dp.toPx()))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = month,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = content
+            )
+            Text(
+                text = day,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    color = content
+                )
+            )
+            Text(
+                text = year,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = content,
+                modifier = Modifier
+                    .background(border.copy(alpha = 0.18f), RoundedCornerShape(7.dp))
+                    .padding(horizontal = 6.dp, vertical = 1.dp)
+            )
         }
     }
 }
@@ -903,14 +1062,14 @@ fun LiveClassCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .padding(horizontal = 20.dp)
+            .clip(RoundedCornerShape(22.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(22.dp))
             .clickable { onClick() }
-            .padding(24.dp)
+            .padding(14.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -947,7 +1106,7 @@ fun LiveClassCard(
             Column {
                 Text(
                     text = classEntity.name,
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
@@ -1034,14 +1193,12 @@ fun LiveClassCard(
             if (nextClassText != null) {
                 Text(
                     text = nextClassText,
-                    style = MaterialTheme.typography.labelMedium.copy(
+                    style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1264,6 +1421,16 @@ fun SmartHomeworkCard(
     }
 }
 
+/** Strips prefixes like "Class " and returns a compact 4-char badge label such as "1A". */
+private fun shortClassName(name: String): String {
+    return name
+        .trim()
+        .removePrefix("Class ")
+        .removePrefix("CLASS ")
+        .removePrefix("class ")
+        .take(4)
+}
+
 @Composable
 fun ClassScheduleItem(
     classEntity: ClassEntity,
@@ -1333,7 +1500,7 @@ fun ClassScheduleItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Compact circular leading thumbnail showing the class initial
+            // Compact circular leading thumbnail showing the class name (e.g. "1A", "10B")
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -1345,10 +1512,15 @@ fun ClassScheduleItem(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = classEntity.name.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                    text = shortClassName(classEntity.name),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp
+                    ),
                     color = if (status == ClassStatus.ACTIVE) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))

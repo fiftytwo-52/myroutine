@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -58,6 +59,7 @@ fun SettingsScreen(
     val teachers by viewModel.allTeachers.collectAsStateWithLifecycle(initialValue = emptyList())
     val classes by viewModel.allClasses.collectAsStateWithLifecycle(initialValue = emptyList())
     val managedClasses by viewModel.allManagedClasses.collectAsStateWithLifecycle(initialValue = emptyList())
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle(initialValue = com.example.ui.theme.ThemeMode.LIGHT)
     
     val schoolStartTime by viewModel.schoolStartTime.collectAsStateWithLifecycle(initialValue = "08:00")
     val firstPeriodTime by viewModel.firstPeriodTime.collectAsStateWithLifecycle(initialValue = "08:30")
@@ -92,8 +94,10 @@ fun SettingsScreen(
                                 0 -> "Profile & Automation"
                                 1 -> "Routine Setup"
                                 2 -> "Data Backup"
-                                3 -> "Subjects"
+                                3 -> "Classes"
                                 4 -> "Holidays"
+                                5 -> "Appearance"
+                                6 -> "Dashboard"
                                 else -> "Settings"
                             }
                         },
@@ -144,8 +148,8 @@ fun SettingsScreen(
                     }
                     item {
                         SettingsMenuItem(
-                            title = "Subjects",
-                            subtitle = "Manage taught subjects & classes",
+                            title = "Classes",
+                            subtitle = "Add, rename or remove class sections",
                             icon = Icons.Default.Class,
                             onClick = { selectedSettingGroup = 3 }
                         )
@@ -156,6 +160,22 @@ fun SettingsScreen(
                             subtitle = "Set weekly off days & public holidays",
                             icon = Icons.Default.BeachAccess,
                             onClick = { selectedSettingGroup = 4 }
+                        )
+                    }
+                    item {
+                        SettingsMenuItem(
+                            title = "Appearance",
+                            subtitle = "Switch between Light and Dark mode",
+                            icon = Icons.Default.Contrast,
+                            onClick = { selectedSettingGroup = 5 }
+                        )
+                    }
+                    item {
+                        SettingsMenuItem(
+                            title = "Dashboard",
+                            subtitle = "System-wide statistics & PDF report",
+                            icon = Icons.Default.Insights,
+                            onClick = { selectedSettingGroup = 6 }
                         )
                     }
                     item {
@@ -221,6 +241,14 @@ fun SettingsScreen(
                              snackbarHostState = snackbarHostState
                         )
                         4 -> HolidaysConfigTab(viewModel = viewModel)
+                        5 -> AppearanceTab(
+                            themeMode = themeMode,
+                            onToggleTheme = { dark -> viewModel.toggleThemeMode(dark) }
+                        )
+                        6 -> DashboardTab(
+                            viewModel = viewModel,
+                            context = context
+                        )
                     }
                 }
             }
@@ -1227,9 +1255,14 @@ fun ManagedClassesTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            "Manage Classes",
+            "Add / Remove Classes",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Black
+        )
+        Text(
+            "Add new class sections or remove the ones you no longer teach.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Row(
@@ -1286,7 +1319,7 @@ fun ManagedClassesTab(
 
     subjectToDelete?.let { subject ->
         MathCaptchaDialog(
-            title = "Delete Subject/Class",
+            title = "Delete Class",
             text = "Are you sure you want to delete ${subject.name}? This might break existing students and routines attached to it.",
             onConfirm = {
                 subjectToDelete = null
@@ -1528,5 +1561,263 @@ fun DataBackupTab(viewModel: ClassFlowViewModel) {
             },
             onDismiss = { pendingRestoreJson = null }
         )
+    }
+}
+@Composable
+fun AppearanceTab(
+    themeMode: com.example.ui.theme.ThemeMode,
+    onToggleTheme: (Boolean) -> Unit
+) {
+    val isDark = themeMode == com.example.ui.theme.ThemeMode.DARK
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Contrast, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("APP APPEARANCE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                "Dark / Light mode",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+                    Text(
+                        "The chosen theme applies instantly to every screen, dialog and chart in the whole app.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Dark Mode", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                if (isDark) "On — dark theme enabled system-wide" else "Off — light theme active",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(checked = isDark, onCheckedChange = onToggleTheme)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AppearancePreviewCard(
+                            label = "Light",
+                            bg = Color(0xFFF8F5F0),
+                            fg = Color(0xFF1F1D24),
+                            accent = Color(0xFF5F51A0),
+                            selected = !isDark,
+                            modifier = Modifier.weight(1f)
+                        )
+                        AppearancePreviewCard(
+                            label = "Dark",
+                            bg = Color(0xFF141317),
+                            fg = Color(0xFFE8E4EC),
+                            accent = Color(0xFFBDA7FF),
+                            selected = isDark,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppearancePreviewCard(
+    label: String,
+    bg: Color,
+    fg: Color,
+    accent: Color,
+    selected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent)
+            .border(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(bg)
+                .padding(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(accent)
+            )
+            Text(
+                "Aa",
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = fg),
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 28.dp)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+@Composable
+fun DashboardTab(
+    viewModel: ClassFlowViewModel,
+    context: android.content.Context
+) {
+    val students by viewModel.allStudents.collectAsStateWithLifecycle(emptyList())
+    val classes by viewModel.allClasses.collectAsStateWithLifecycle(emptyList())
+    val managedClasses by viewModel.allManagedClasses.collectAsStateWithLifecycle(emptyList())
+    val homework by viewModel.allHomework.collectAsStateWithLifecycle(emptyList())
+    val submissions by viewModel.allSubmissions.collectAsStateWithLifecycle(emptyList())
+    val activities by viewModel.allActivities.collectAsStateWithLifecycle(emptyList())
+    val exams by viewModel.allExams.collectAsStateWithLifecycle(emptyList())
+    val events by viewModel.allDatedEvents.collectAsStateWithLifecycle(emptyList())
+    val holidays by viewModel.allHolidays.collectAsStateWithLifecycle(emptyList())
+    val weeklyHolidays by viewModel.weeklyHolidays.collectAsStateWithLifecycle(emptySet())
+    val syllabi by viewModel.allSyllabuses.collectAsStateWithLifecycle(emptyList())
+
+    val completedEvents = events.count { it.eventStatus == "COMPLETED" }
+    val cancelledEvents = events.count { it.eventStatus == "CANCELLED" || it.eventStatus == "FAILED" }
+    val pendingEvents = events.size - completedEvents - cancelledEvents
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Insights, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("SYSTEM DASHBOARD", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text("Every dataset, one snapshot", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                        }
+                    }
+                    Text(
+                        "Live summary of your students, homeworks, behavior logs, exams, events and holidays. Export a beautiful PDF report with charts below.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { viewModel.generateDasboardPdf(context) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Export Dashboard as PDF")
+                    }
+                }
+            }
+        }
+
+        item {
+            DashboardStatCard(
+                title = "STUDENTS",
+                values = listOf(
+                    Triple("Registered", students.size.toString(), Color(0xFF3F51B5)),
+                    Triple("Managed Classes", managedClasses.size.toString(), Color(0xFF26A69A))
+                )
+            )
+        }
+        item {
+            DashboardStatCard(
+                title = "HOMEWORK",
+                values = listOf(
+                    Triple("Given", homework.size.toString(), Color(0xFF2E7D32)),
+                    Triple("Completed", homework.count { it.isCompleted }.toString(), Color(0xFF558B2F)),
+                    Triple("Evaluations", submissions.size.toString(), Color(0xFF26A69A))
+                )
+            )
+        }
+        item {
+            DashboardStatCard(
+                title = "BEHAVIOR & EXAMS",
+                values = listOf(
+                    Triple("Behavior Logs", activities.size.toString(), Color(0xFF7E57C2)),
+                    Triple("Exams", exams.size.toString(), Color(0xFFF9A825)),
+                    Triple("Routine Periods", classes.size.toString(), Color(0xFF5C6BC0))
+                )
+            )
+        }
+        item {
+            DashboardStatCard(
+                title = "EVENTS & HOLIDAYS",
+                values = listOf(
+                    Triple("Completed", completedEvents.toString(), Color(0xFF2E7D32)),
+                    Triple("Cancelled/Failed", cancelledEvents.toString(), Color(0xFFC62828)),
+                    Triple("Pending", pendingEvents.toString(), Color(0xFF1565C0)),
+                    Triple("Holidays", "${holidays.size} + ${weeklyHolidays.size} weekly", Color(0xFFF9A825))
+                )
+            )
+        }
+        item {
+            DashboardStatCard(
+                title = "SYLLABUS",
+                values = listOf(
+                    Triple("Registered Syllabi", syllabi.size.toString(), Color(0xFF26A69A))
+                )
+            )
+        }
+    }
+}
+@Composable
+private fun DashboardStatCard(title: String, values: List<Triple<String, String, Color>>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                values.forEach { (label, value, color) ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(color.copy(alpha = 0.14f))
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = color)
+                        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
     }
 }

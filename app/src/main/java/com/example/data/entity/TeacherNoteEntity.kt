@@ -11,5 +11,7 @@ data class TeacherNoteEntity(
     val createdDateMillis: Long = System.currentTimeMillis(),
     val tag: String = "General", // e.g. "Lesson Plan", "Homework Notes", "General"
     // Non-null marks this row as a dated calendar event instead of a plain note.
-    val eventEpochDay: Long? = null
+    val eventEpochDay: Long? = null,
+    // Outcome of a calendar event: "" (pending), "COMPLETED", "CANCELLED" or "FAILED".
+    val eventStatus: String = ""
 )

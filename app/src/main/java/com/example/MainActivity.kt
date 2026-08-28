@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -76,7 +77,25 @@ class MainActivity : ComponentActivity() {
             )
         )
         setContent {
-            ClassFlowTheme {
+            val viewModel: ClassFlowViewModel = viewModel()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle(
+                initialValue = com.example.ui.theme.ThemeMode.LIGHT
+            )
+            val isDark = themeMode == com.example.ui.theme.ThemeMode.DARK
+
+            // Keep the edge-to-edge system bars in sync with the chosen app theme
+            // so status/nav icons stay legible in both light and dark modes.
+            val view = LocalView.current
+            if (!view.isInEditMode) {
+                SideEffect {
+                    val window = (view.context as android.app.Activity).window
+                    val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                    controller.isAppearanceLightStatusBars = !isDark
+                    controller.isAppearanceLightNavigationBars = !isDark
+                }
+            }
+
+            ClassFlowTheme(themeMode = themeMode) {
                 var showSplash by remember { mutableStateOf(value = true) }
                 
                 if (showSplash) {

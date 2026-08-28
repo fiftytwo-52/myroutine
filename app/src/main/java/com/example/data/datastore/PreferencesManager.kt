@@ -22,6 +22,21 @@ class PreferencesManager(private val context: Context) {
         val ONBOARDING_FINISHED_KEY = booleanPreferencesKey("onboarding_finished")
         val NEPALI_DATE_OFFSET_KEY = androidx.datastore.preferences.core.intPreferencesKey("nepali_date_offset")
         val WEEKLY_HOLIDAYS_KEY = androidx.datastore.preferences.core.stringSetPreferencesKey("weekly_holidays")
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+    }
+
+    val themeMode: Flow<com.example.ui.theme.ThemeMode> = context.dataStore.data.map { preferences ->
+        if (preferences[THEME_MODE_KEY] == "DARK") {
+            com.example.ui.theme.ThemeMode.DARK
+        } else {
+            com.example.ui.theme.ThemeMode.LIGHT
+        }
+    }
+
+    suspend fun saveThemeMode(mode: com.example.ui.theme.ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = mode.name
+        }
     }
 
     val weeklyHolidays: Flow<Set<String>> = context.dataStore.data.map { preferences ->

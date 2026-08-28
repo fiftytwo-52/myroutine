@@ -104,6 +104,10 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
     val allHomework = repository.allHomework
     val allHolidays = repository.allHolidays
 
+    // System-wide aggregates used by the Settings Dashboard and PDF report
+    val allSubmissions = repository.homeworkSubmissionDao.getAllSubmissions()
+    val allMarks = repository.examDao.getAllMarks()
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val classLogsForSelectedDate: StateFlow<List<com.example.data.entity.ClassLogEntity>> = _selectedDateMillis
         .flatMapLatest { dateMillis: Long ->
@@ -135,6 +139,22 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
     val silencerEnabled = preferencesManager.silencerEnabled
     val firstPeriodTime = preferencesManager.firstPeriodTime
     val secondPeriodTime = preferencesManager.secondPeriodTime
+
+    // System-wide app theme (LIGHT / DARK) chosen in Settings.
+    val themeMode = preferencesManager.themeMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = com.example.ui.theme.ThemeMode.LIGHT
+    )
+
+    fun toggleThemeMode(dark: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.saveThemeMode(
+                if (dark) com.example.ui.theme.ThemeMode.DARK else com.example.ui.theme.ThemeMode.LIGHT
+            )
+        }
+    }
+
     val nepaliDateOffset = preferencesManager.nepaliDateOffset.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -411,6 +431,7 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                         put("tag", it.tag)
                         put("createdDateMillis", it.createdDateMillis)
                         put("eventEpochDay", it.eventEpochDay ?: org.json.JSONObject.NULL)
+                        put("eventStatus", it.eventStatus)
                     }
                     notesArray.put(obj)
                 }
@@ -543,7 +564,8 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                         createdDateMillis = optLong(obj, "createdDateMillis"),
                         eventEpochDay = if (obj.has("eventEpochDay") && !obj.isNull("eventEpochDay")) {
                             obj.getLong("eventEpochDay")
-                        } else null
+                        } else null,
+                        eventStatus = optStr(obj, "eventStatus")
                     )
                 }
 
@@ -674,7 +696,8 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
         title: String,
         content: String,
         tag: String = "General",
-        eventEpochDay: Long? = null
+        eventEpochDay: Long? = null,
+        eventStatus: String = ""
     ) {
         viewModelScope.launch {
             val entity = TeacherNoteEntity(
@@ -682,7 +705,8 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                 title = title,
                 content = content,
                 tag = tag,
-                eventEpochDay = eventEpochDay
+                eventEpochDay = eventEpochDay,
+                eventStatus = eventStatus
             )
             if (id == 0) {
                 repository.insertNote(entity)
@@ -697,15 +721,24 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
         id: Int = 0,
         title: String,
         content: String,
-        eventEpochDay: Long
+        eventEpochDay: Long,
+        eventStatus: String = ""
     ) {
         saveNote(
             id = id,
             title = title,
             content = content,
             tag = "Event",
-            eventEpochDay = eventEpochDay
+            eventEpochDay = eventEpochDay,
+            eventStatus = eventStatus
         )
+    }
+
+    /** Mark an event's outcome: "", "COMPLETED", "CANCELLED" or "FAILED". */
+    fun setEventStatus(note: TeacherNoteEntity, status: String) {
+        viewModelScope.launch {
+            repository.teacherNoteDao.updateEventStatus(note.id, status)
+        }
     }
 
     fun deleteNote(note: TeacherNoteEntity) {
@@ -1327,8 +1360,10 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                     currentY += 25f
 
                     textPaint.isFakeBoldText = false
-                    canvas.drawText("Full Marks: ${exam.fullMarks}", marginLeft, currentY, textPaint)
-                    canvas.drawText("Pass Marks: ${exam.passMarks}", 200f, currentY, textPaint)
+                    val classLine = exam.targetClassNames?.takeIf { it.isNotBlank() } ?: "All Classes"
+                    canvas.drawText("Class: $classLine", marginLeft, currentY, textPaint)
+                    canvas.drawText("Full Marks: ${exam.fullMarks}", 260f, currentY, textPaint)
+                    canvas.drawText("Pass Marks: ${exam.passMarks}", 420f, currentY, textPaint)
                     currentY += 30f
                     
                     textPaint.isFakeBoldText = true
@@ -1352,9 +1387,10 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                     textPaint.textSize = 12f
                     canvas.drawText("SN", marginLeft + 5f, currentY, textPaint)
                     canvas.drawText("Student Name", marginLeft + 40f, currentY, textPaint)
-                    canvas.drawText("Mark", marginLeft + 230f, currentY, textPaint)
-                    canvas.drawText("Result", marginLeft + 300f, currentY, textPaint)
-                    canvas.drawText("Remarks", marginLeft + 380f, currentY, textPaint)
+                    canvas.drawText("Class", marginLeft + 240f, currentY, textPaint)
+                    canvas.drawText("Mark", marginLeft + 315f, currentY, textPaint)
+                    canvas.drawText("Result", marginLeft + 380f, currentY, textPaint)
+                    canvas.drawText("Remarks", marginLeft + 445f, currentY, textPaint)
                     currentY += rowHeight
                 }
 
@@ -1383,7 +1419,8 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                         textPaint.isFakeBoldText = false
                         textPaint.textSize = 12f
                         canvas.drawText(sn.toString(), marginLeft + 5f, currentY, textPaint)
-                        canvas.drawText(student.name, marginLeft + 40f, currentY, textPaint)
+                        canvas.drawText(student.name.take(22), marginLeft + 40f, currentY, textPaint)
+                        canvas.drawText(student.className.take(10), marginLeft + 240f, currentY, textPaint)
 
                         val markDouble = mark.marksObtained.toDoubleOrNull()
                         val resultStr = if (mark.marksObtained.lowercase() == "absent") {
@@ -1392,7 +1429,7 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                             if (markDouble >= passInt) "Pass" else "Fail"
                         } else "N/A"
 
-                        canvas.drawText(mark.marksObtained, marginLeft + 230f, currentY, textPaint)
+                        canvas.drawText(mark.marksObtained, marginLeft + 315f, currentY, textPaint)
                         
                         if (resultStr == "Pass") {
                             textPaint.color = android.graphics.Color.parseColor("#00695C")
@@ -1401,13 +1438,13 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
                             textPaint.color = android.graphics.Color.parseColor("#D32F2F")
                             textPaint.isFakeBoldText = true
                         }
-                        canvas.drawText(resultStr, marginLeft + 300f, currentY, textPaint)
+                        canvas.drawText(resultStr, marginLeft + 380f, currentY, textPaint)
                         textPaint.color = android.graphics.Color.BLACK
                         textPaint.isFakeBoldText = false
                         
                         var safeRemarks = mark.remarks
-                        if (safeRemarks.length > 25) safeRemarks = safeRemarks.take(22) + "..."
-                        canvas.drawText(safeRemarks, marginLeft + 380f, currentY, textPaint)
+                        if (safeRemarks.length > 18) safeRemarks = safeRemarks.take(15) + "..."
+                        canvas.drawText(safeRemarks, marginLeft + 445f, currentY, textPaint)
 
                         currentY += rowHeight
                         sn++
@@ -1476,6 +1513,21 @@ class ClassFlowViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+/** Generates the system-wide Dashboard PDF through the Android print framework. */
+    fun generateDasboardPdf(context: android.content.Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val teacherName = repository.allTeachers.first().firstOrNull()?.name ?: "Teacher"
+            val weeklyHolidayCount = preferencesManager.weeklyHolidays.first().size
+            com.example.ui.screens.DashboardPdfGenerator.generate(
+                repository = repository,
+                context = context,
+                teacherName = teacherName,
+                weeklyHolidayCount = weeklyHolidayCount,
+                onSuccess = {},
+                onError = {}
+            )
+        }
+    }
     fun resetBehaviorForStudent(studentId: Int) {
         viewModelScope.launch {
             repository.studentActivityDao.deleteAllActivitiesForStudent(studentId)

@@ -38,6 +38,9 @@ fun NotesScreen(
     
     var searchQuery by remember { mutableStateOf("") }
     var selectedTagFilter by remember { mutableStateOf("All") }
+
+    // Browsed as separate sections so journal entries don't mix with the events/holidays calendar
+    var journalSection by remember { mutableStateOf("Journal") }
     
     var showAddNoteDialog by remember { mutableStateOf(false) }
     var editingNote by remember { mutableStateOf<TeacherNoteEntity?>(null) }
@@ -100,15 +103,36 @@ fun NotesScreen(
             contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = innerPadding.calculateTopPadding() + 6.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Item 1: Holiday Calendar
+            // Section toggle — journal entries and events/holidays are kept as separate views
             item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = journalSection == "Journal",
+                        onClick = { journalSection = "Journal" },
+                        label = { Text("Journal (${filteredNotes.size})") }
+                    )
+                    FilterChip(
+                        selected = journalSection == "Events & Holidays",
+                        onClick = { journalSection = "Events & Holidays" },
+                        label = { Text("Events & Holidays") }
+                    )
+                }
+            }
+
+            // Item 1: Holiday Calendar — Events & Holidays section only
+            if (journalSection == "Events & Holidays") item {
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                     ViewOnlyHolidayCalendar(viewModel, weeklyHolidays)
                 }
             }
 
-            // Item 2: Search field & Tag filter Category Card
-            item {
+            // Item 2: Search field & Tag filter Category Card — Journal section only
+            if (journalSection == "Journal") item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -161,8 +185,8 @@ fun NotesScreen(
                 }
             }
 
-            // Diary notes entry items list
-            if (filteredNotes.isEmpty()) {
+            // Diary notes entry items list — Journal section only
+            if (journalSection == "Journal" && filteredNotes.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -195,7 +219,9 @@ fun NotesScreen(
                         }
                     }
                 }
-            } else {
+            }
+
+            if (journalSection == "Journal") {
                 items(filteredNotes, key = { "note_${it.id}_${it.createdDateMillis}" }) { note ->
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                         JournalNoteCard(
