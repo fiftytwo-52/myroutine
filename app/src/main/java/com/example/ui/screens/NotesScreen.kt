@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.data.entity.HolidayEntity
 import com.example.data.entity.TeacherNoteEntity
 import com.example.ui.ClassFlowViewModel
 import java.text.SimpleDateFormat
@@ -54,13 +56,34 @@ fun NotesScreen(
     
     val tags = listOf("All", "Lesson Plan", "Homework Idea", "General", "Observation")
     
-    val filteredNotes = remember(notes, searchQuery, selectedTagFilter) {
-        notes.filter { note ->
+    // Plain diary notes only — dated events (eventEpochDay != null) are managed by the
+    // separate Events & Holidays section tied to the event and holiday buttons.
+    val journalNotes = remember(notes) { notes.filter { it.eventEpochDay == null } }
+    val eventNotes = remember(notes) { notes.filter { it.eventEpochDay != null } }
+
+    val filteredNotes = remember(journalNotes, searchQuery, selectedTagFilter) {
+        journalNotes.filter { note ->
             val matchesQuery = note.title.contains(searchQuery, ignoreCase = true) || 
                                note.content.contains(searchQuery, ignoreCase = true)
             val matchesTag = selectedTagFilter == "All" || note.tag == selectedTagFilter
             matchesQuery && matchesTag
         }
+    }
+
+    // The journal search bar still searches everything: journal entries, notes, lesson
+    // plans, homework ideas, dated events, and holidays are all matched by the query.
+    val matchingEvents = remember(eventNotes, searchQuery) {
+        if (searchQuery.isBlank()) emptyList()
+        else eventNotes.filter { event ->
+            event.title.contains(searchQuery, ignoreCase = true) ||
+            event.content.contains(searchQuery, ignoreCase = true)
+        }.sortedBy { it.eventEpochDay ?: 0L }
+    }
+    val matchingHolidays = remember(allHolidays, searchQuery) {
+        if (searchQuery.isBlank()) emptyList()
+        else allHolidays.filter { holiday ->
+            holiday.title.contains(searchQuery, ignoreCase = true)
+        }.sortedBy { it.startDate }
     }
 
     Scaffold(
@@ -147,7 +170,7 @@ fun NotesScreen(
                         TextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search title, lesson plan, task notes...") },
+                            placeholder = { Text("Search notes, lesson plans, events, holidays...") },
                             leadingIcon = { Icon(Icons.Default.Search, null) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
@@ -185,8 +208,10 @@ fun NotesScreen(
                 }
             }
 
-            // Diary notes entry items list — Journal section only
-            if (journalSection == "Journal" && filteredNotes.isEmpty()) {
+            // Empty state — only when no diary notes, events, or holidays matched
+            if (journalSection == "Journal" && filteredNotes.isEmpty() &&
+                (searchQuery.isBlank() || (matchingEvents.isEmpty() && matchingHolidays.isEmpty()))
+            ) {
                 item {
                     Box(
                         modifier = Modifier
@@ -205,12 +230,13 @@ fun NotesScreen(
                                 modifier = Modifier.size(64.dp)
                             )
                             Text(
-                                "No teaching notes created.",
+                                if (searchQuery.isBlank()) "No teaching notes created." else "No matches found.",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "Compile homework questions, lesson outlines, exam preps, and observations directly in your teaching diary.",
+                                if (searchQuery.isBlank()) "Compile homework questions, lesson outlines, exam preps, and observations directly in your teaching diary."
+                                else "Nothing matched \"${searchQuery}\" across your journal notes, lesson plans, homework ideas, events, and holidays.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(horizontal = 24.dp),
@@ -231,6 +257,42 @@ fun NotesScreen(
                                 showAddNoteDialog = true
                             },
                             onDelete = { noteToDelete = note }
+                        )
+                    }
+                }
+            }
+
+            // The journal search bar reaches beyond diary notes — matching events and
+            // holidays surface as their own result groups below the notes list.
+            if (journalSection == "Journal" && searchQuery.isNotBlank() && matchingEvents.isNotEmpty()) {
+                item {
+                    SearchResultHeader(title = "Matching Events", count = matchingEvents.size)
+                }
+                items(matchingEvents, key = { "event_${it.id}" }) { event ->
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        CalendarSearchResultCard(
+                            icon = Icons.Default.Event,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            title = event.title,
+                            dateText = formatEventEpochDay(event.eventEpochDay),
+                            subtitle = event.eventStatus.ifBlank { "Pending" }
+                        )
+                    }
+                }
+            }
+
+            if (journalSection == "Journal" && searchQuery.isNotBlank() && matchingHolidays.isNotEmpty()) {
+                item {
+                    SearchResultHeader(title = "Matching Holidays", count = matchingHolidays.size)
+                }
+                items(matchingHolidays, key = { "holiday_${it.id}" }) { holiday ->
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        CalendarSearchResultCard(
+                            icon = Icons.Default.Celebration,
+                            iconTint = MaterialTheme.colorScheme.error,
+                            title = holiday.title,
+                            dateText = formatHolidayRange(holiday),
+                            subtitle = "Holiday"
                         )
                     }
                 }
@@ -480,4 +542,93 @@ fun NoteAddEditDialog(
             }
         }
     )
+}
+
+
+@Composable
+private fun SearchResultHeader(title: String, count: Int) {
+    Text(
+        "$title ($count)",
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp)
+    )
+}
+
+@Composable
+private fun CalendarSearchResultCard(
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    dateText: String,
+    subtitle: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(iconTint.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = iconTint)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    dateText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = iconTint
+            )
+        }
+    }
+}
+
+/** Formats a note's eventEpochDay (days since epoch) as a readable date. */
+private fun formatEventEpochDay(epochDay: Long?): String = epochDay?.let {
+    try {
+        java.time.LocalDate.ofEpochDay(it)
+            .format(java.time.format.DateTimeFormatter.ofPattern("EEE, MMM dd yyyy"))
+    } catch (e: Exception) {
+        ""
+    }
+} ?: ""
+
+/** Formats a holiday's "YYYY-MM-DD" start/end range for the search results. */
+private fun formatHolidayRange(holiday: HolidayEntity): String = try {
+    val fmt = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")
+    val start = java.time.LocalDate.parse(holiday.startDate)
+    if (holiday.startDate == holiday.endDate) {
+        start.format(fmt)
+    } else {
+        "${start.format(fmt)} – ${java.time.LocalDate.parse(holiday.endDate).format(fmt)}"
+    }
+} catch (e: Exception) {
+    if (holiday.startDate == holiday.endDate) holiday.startDate
+    else "${holiday.startDate} – ${holiday.endDate}"
 }

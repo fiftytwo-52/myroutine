@@ -41,6 +41,7 @@
 - [x] Make the time widget's text and outline colour wallpaper-aware: white over dark/colourful wallpapers, dark over light ones, using the system's wallpaper colour hints.
 - [x] Redesign the "MyClass Time" widget as a minimal vertical pill clock: big stacked hour over minutes with a small AM/PM only (label and both dates removed), a true pill outline via an oversized clamped corner radius, and a slim 1×2 default shape.
 - [x] Halve the time widget width: zero-padded "01:" hour stacked over "05" minutes, with a wrap-content pill hugging the digits inside the cell and `minWidth` reduced from 70 dp to 35 dp.
+- [x] Split the Teaching Journal list from dated events: journal entries, notes, lesson plans, and homework ideas only (events stay in the Events & Holidays section), while the journal search bar matches everything — notes, events, and holidays — surfacing event and holiday matches as extra result groups.
 
 - [x] Read and reviewed [`upgrade.md`](upgrade.md), including all four upgrade phases.
 - [x] Confirmed the project already uses Room persistence for core entities, DAOs, and the database.
